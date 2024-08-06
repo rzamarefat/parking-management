@@ -28,3 +28,14 @@ class Configuration:
 
     TRACKER_CONFIDENCE = 0.5
     TRACKER_IOU = 0.5 
+
+    PRODUCER_QUEUE_NAME = "parking-producer"
+    CONSUMED_QUEUE_NAME = "parking-consumed"
+
+
+    RABBIT_CREDENTIALS_USERNAME = "guest"
+    RABBIT_CREDENTIALS_PASSWORD = "guest"
+    RABBIT_HOST = "localhost"
+    RABBIT_IP = "127.0.0.1"
+    RABBIT_PORT = "5672"
+    QUEUE_NAME = "parking-producer"

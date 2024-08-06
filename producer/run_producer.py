@@ -1,0 +1,9 @@
+from Producer import Producer
+
+
+if __name__ == "__main__":
+    producer = Producer()
+
+    for i in range(10):
+        producer(r"C:\Users\ASUS\Desktop\github_projects\Parking\parking-management\main_vid.mp4")
+        

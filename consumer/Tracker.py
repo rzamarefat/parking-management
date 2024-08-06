@@ -84,7 +84,10 @@ class Tracker:
 
     def __call__(self, frame):
         frame = self._track_cars(frame)
-        return frame
+        info = {
+            "number_of_cars": 200
+        }
+        return frame, info
         
 
 
