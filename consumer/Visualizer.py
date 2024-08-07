@@ -61,9 +61,15 @@ class Visualizer(Composition):
 
         return overlay
     
-    def draw_single_car(self, frame, box, car_id, color_holder):
+    def draw_single_car(self, frame, box, car_id, color_holder, speed):
         # frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), color_holder[car_id], 2)
+        if speed is None:
+            speed_txt = "N"
+        else:
+            speed_txt = str(speed)
         frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), (0,0,0), 2)
+        cv2.putText(frame, speed_txt, (int(box[0].item()), int(box[1].item())), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2, cv2.LINE_AA)
+
         return frame
 
 if __name__ == "__main__":

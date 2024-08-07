@@ -61,8 +61,7 @@ class Consumer:
         
     def __call__(self, frame=None):
         frame, info = self._tracker_handler(frame)
-
-        return None, None
+        return frame, info
 
         # while True:
         #     def callback(ch, method, properties, body):

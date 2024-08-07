@@ -17,7 +17,9 @@ class Tracker(Composition):
         self._color_holder = {}
         self._parse_scene_composition()
         self._visualizer = Visualizer()
+
         self._box_ids_history = None
+        self._speed_stats = None
 
     def _get_filled_cells(self, bounding_boxes):
         device = bounding_boxes.device
@@ -101,10 +103,11 @@ class Tracker(Composition):
             
             # Update the result tensor
             result[:, 1] = updated_distances
-
-            print(result.to("cpu").numpy().tolist())
+            result = result.to("cpu").numpy().tolist()
             
-            return result
+            return {int(k[0]):round(k[1], 2) for k in result}
+        else:
+            return {}
 
             
 
@@ -124,7 +127,7 @@ class Tracker(Composition):
         self._visualizer.draw_cells(frame, self._filled_cells_indixes)
 
 
-        self._calculate_speed()
+        self._speed_stats = self._calculate_speed()
 
         self._box_ids_history = self._current_box_ids.clone()
         
@@ -133,8 +136,11 @@ class Tracker(Composition):
             
             if car_id not in self._color_holder.keys():
                 self._color_holder[car_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-            self._visualizer.draw_single_car(frame, box, car_id, self._color_holder)
+            
+            
+            speed = self._speed_stats.get(int(car_id.item()), None)
+            print(self._speed_stats)
+            self._visualizer.draw_single_car(frame, box, car_id, self._color_holder, speed)
 
         return frame
 

@@ -20,10 +20,9 @@ if __name__ == "__main__":
             break
             
         frame, info = consumer(frame)    
-        print(info)
         
 
-        # cv2.imwrite(rf"C:\Users\ASUS\Desktop\github_projects\Parking\parking-management\temp\{str(counter).zfill(4)}.png", drawn_frame)
+        cv2.imwrite(rf"C:\Users\ASUS\Desktop\github_projects\Parking\parking-management\temp\{str(counter).zfill(4)}.png", frame)
 
 
         counter += 1
