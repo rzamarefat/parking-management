@@ -10,10 +10,10 @@ import msgpack
 
 class Consumer:
     def __init__(self):
-        try:
-            self._tracker_handler = Tracker()
-        except Exception as e:
-            print(e)
+        # try:
+        self._tracker_handler = Tracker()
+        # except Exception as e:
+        #     print(e)
         
         self._connection = pika.BlockingConnection(pika.ConnectionParameters(host="127.0.0.1"))
         self._channel = self._connection.channel()
@@ -60,11 +60,17 @@ class Consumer:
         return frame
         
     def __call__(self):
+        # frame = cv2.imread(r"C:\Users\ASUS\Desktop\github_projects\Parking\important_images\0045.png")
+        # frame, info = self._tracker_handler(frame)
+        # cv2.imwrite("FRAME.png", frame)
         while True:
             def callback(ch, method, properties, body):
                 frame = self._convert_bytes_to_image(body)
 
                 frame, info = self._tracker_handler(frame)
+
+                cv2.imwrite("FRAME.png", frame)
+
                 self._publish_image_with_metadata(frame, info)
                 print("Published Successfully")
 

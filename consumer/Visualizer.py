@@ -2,15 +2,17 @@ import os
 import json
 import cv2
 import numpy as np
+from Compostion import Composition
+
 
 class ColorPallete:
     ZONES = {
-            'z1': (123, 45, 67),
+            'z1': (255, 131, 67),
             'z12': (234, 56, 78),
-            'z2': (12, 89, 200),
-            'z3': (45, 12, 67),
-            'z4': (200, 100, 50),
-            'z5': (55, 155, 255),
+            'z2': (23, 155, 174),
+            'z3': (65, 88, 166),
+            'z4': (239, 90, 111),
+            'z5': (212, 189, 172),
             'z6': (67, 89, 23),
             'z7': (123, 234, 45),
             'z8': (0, 123, 255),
@@ -19,29 +21,37 @@ class ColorPallete:
             'z11': (255, 123, 0),
             'z10': (12, 255, 78),
             'z13': (34, 56, 78),
-            'pz2': (78, 123, 255),
-            'pz1': (200, 45, 123),
-            'zz': (55, 200, 123)
+            'pz2': (200, 200, 0),
+            'pz1': (159, 159, 159),
+            'zz': (255, 2, 255),
+            "nothing": (0,0,0)
         }
 
-class Visualizer:
+class Visualizer(Composition):
     def __init__(self):
-        self._parse_scene_composition()
+        super().__init__()
+        pass
+        
+
+    def draw_cells(self, frame, filled_cells_indixes):
+        overlay = frame.copy()
     
-    def _parse_scene_composition(self):
-        path_to_config = os.path.join(os.getcwd(), "scene_composition.json")
-        with open(path_to_config, 'r') as file:
-            info = json.load(file)
+        for index, rect in enumerate(self._car_cells):
+            top_left = (int(rect[0][0]), int(rect[0][1]))
+            bottom_right = (int(rect[1][0]), int(rect[1][1]))
+            if index in filled_cells_indixes:
+                color = (0, 0, 255)
+            else:
+                color = (0, 255, 0)
 
-        self._img_height = info["imageHeight"]
-        self._img_width = info["imageWidth"]
+            cv2.rectangle(overlay, top_left, bottom_right, color, -1)
+        cv2.addWeighted(overlay, 0.5, frame, 0.8, 0, frame)
+        
+        return frame
 
-        self._zones = {shape["label"]:shape["points"]  for shape in info["shapes"] if shape["label"].__contains__("z")}
-        print(self._zones)
 
-    def _draw_zones(self, frame):
+    def draw_zones(self, frame):
         for k, v in self._zones.items():
-            print(v)
             opacity=0.2
             overlay = frame.copy()
             points = np.array(v, np.int32).reshape((-1, 1, 2))
@@ -50,11 +60,11 @@ class Visualizer:
             cv2.addWeighted(overlay, opacity, frame, 1 - opacity, 0, frame)
 
         return overlay
-
-    def __call__(self, frame):
-        frame = self._draw_zones(frame)
-
-        cv2.imwrite("frame.png", frame)
+    
+    def draw_single_car(self, frame, box, car_id, color_holder):
+        # frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), color_holder[car_id], 2)
+        frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), (0,0,0), 2)
+        return frame
 
 if __name__ == "__main__":
     vis = Visualizer()

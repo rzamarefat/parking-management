@@ -31,7 +31,6 @@ class Receiver(QThread):
 
         def callback(ch, method, properties, body):
             try:
-                print("Received message:", body[:100], "...")  # Debug print
                 message = msgpack.unpackb(body, raw=False)
                 image_bytes = message['image']
                 metadata = message['metadata']  # Extract metadata
