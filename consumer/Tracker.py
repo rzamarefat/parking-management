@@ -17,8 +17,7 @@ class Tracker(Composition):
         self._color_holder = {}
         self._parse_scene_composition()
         self._visualizer = Visualizer()
-        self._boxes_history = None
-        self._ids_history = None
+        self._box_ids_history = None
 
     def _get_filled_cells(self, bounding_boxes):
         device = bounding_boxes.device
@@ -53,34 +52,59 @@ class Tracker(Composition):
         return rows
     
     def _calculate_speed(self):
-        if self._boxes_history is not None and self._ids_history is not None:
-            ids_diff = [item for item in self._ids_history if item not in self._ids]
-            extra_ids = [item for item in self._ids if item not in self._ids_history]
+        if self._box_ids_history is not None and self._current_box_ids is not None:
+            print("self._box_ids_history", self._box_ids_history.shape)
+            print("self._current_box_ids", self._current_box_ids.shape)
 
-            # print("++++++++++++++++++++++++++++")
-            # print("ids_diff",ids_diff)
-            # print("extra_ids",extra_ids)
+            # Ensure the tensors are on CUDA
+            self._box_ids_history = self._box_ids_history.cuda()
+            self._current_box_ids = self._current_box_ids.cuda()
             
+            # Extract IDs and bounding box coordinates
+            history_ids = self._box_ids_history[:, 0].long()
+            current_ids = self._current_box_ids[:, 0].long()
+            
+            history_boxes = self._box_ids_history[:, 1:]
+            current_boxes = self._current_box_ids[:, 1:]
+            
+            # Find mutual IDs using numpy and move back to CUDA
+            mutual_ids = torch.tensor(np.intersect1d(history_ids.cpu().numpy(), current_ids.cpu().numpy())).to(self._box_ids_history.device)
+            
+            if mutual_ids.numel() == 0:
+                print("No mutual IDs found")
+                return torch.tensor([]).cuda()
+            
+            # Get indices of mutual IDs in history and current
+            history_idx = torch.nonzero(history_ids[:, None] == mutual_ids, as_tuple=False)[:, 0]
+            current_idx = torch.nonzero(current_ids[:, None] == mutual_ids, as_tuple=False)[:, 0]
+            
+            # Filter the boxes for mutual IDs
+            history_mutual_boxes = history_boxes[history_idx]
+            current_mutual_boxes = current_boxes[current_idx]
+            
+            if history_mutual_boxes.shape[0] == 0 or current_mutual_boxes.shape[0] == 0:
+                print("No mutual boxes found after indexing")
+                return torch.tensor([]).cuda()
+            
+            # Calculate centers
+            history_centers = (history_mutual_boxes[:, :2] + history_mutual_boxes[:, 2:]) / 2.0
+            current_centers = (current_mutual_boxes[:, :2] + current_mutual_boxes[:, 2:]) / 2.0
+            
+            # Compute distances
+            distances = torch.norm(history_centers - current_centers, dim=1)
+            
+            # Combine mutual IDs and distances into the result tensor
+            result = torch.stack((mutual_ids.float(), distances), dim=1)
 
-            mask = torch.ones(self._boxes_history.size(0), dtype=torch.bool)
-            mask[ids_diff] = False
-            filtered_boxes_from_history = self._boxes_history[mask]
-            filtered_boxes_from_history = filtered_boxes_from_history.cuda()
+            distances = result[:, 1]
+            updated_distances = torch.where(distances > 0.5, distances * 6, 0)
+            
+            # Update the result tensor
+            result[:, 1] = updated_distances
 
-            mask = torch.ones(self._boxes.size(0), dtype=torch.bool)
-            mask[extra_ids] = False
-            filtered_boxes_current = self._boxes[mask]
-
+            print(result.to("cpu").numpy().tolist())
             
-            # print("filtered_boxes_from_history.shape", filtered_boxes_from_history.shape)
-            # print("self._boxes.shape", self._boxes.shape)
-            # print("++++++++++++++++++++++++++++")
-            
-            centers1 = (filtered_boxes_from_history[:, :2] + filtered_boxes_from_history[:, 2:]) / 2.0
-            centers2 = (filtered_boxes_current[:, :2] + filtered_boxes_current[:, 2:]) / 2.0
-            
-            distances = torch.norm(centers1 - centers2, dim=1)
-            print(distances)
+            return result
 
             
 
@@ -92,11 +116,8 @@ class Tracker(Composition):
 
         self._boxes = results[0].boxes.xyxy.to(CONFIG.DEVICE)
         self._confs = results[0].boxes.conf.cpu().numpy()
-
-        if results[0].boxes.id is None:
-            self._ids = [None for _ in range(len(self._boxes))]
-        else:
-            self._ids = results[0].boxes.id.cpu().numpy().astype(int)
+        self._ids = results[0].boxes.id.to(CONFIG.DEVICE)
+        self._current_box_ids = torch.cat((self._ids.unsqueeze(1), self._boxes), dim=1)
 
         
         self._filled_cells_indixes = self._get_filled_cells(self._boxes)
@@ -105,9 +126,7 @@ class Tracker(Composition):
 
         self._calculate_speed()
 
-
-        self._boxes_history = self._boxes.clone()
-        self._ids_history = copy.deepcopy(self._ids)
+        self._box_ids_history = self._current_box_ids.clone()
         
         for box, car_id, conf in zip(self._boxes, self._ids, self._confs):
 
