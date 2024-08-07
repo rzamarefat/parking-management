@@ -59,22 +59,23 @@ class Consumer:
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         return frame
         
-    def __call__(self):
-        # frame = cv2.imread(r"C:\Users\ASUS\Desktop\github_projects\Parking\important_images\0045.png")
-        # frame, info = self._tracker_handler(frame)
-        # cv2.imwrite("FRAME.png", frame)
-        while True:
-            def callback(ch, method, properties, body):
-                frame = self._convert_bytes_to_image(body)
+    def __call__(self, frame=None):
+        frame, info = self._tracker_handler(frame)
 
-                frame, info = self._tracker_handler(frame)
+        return None, None
 
-                cv2.imwrite("FRAME.png", frame)
+        # while True:
+        #     def callback(ch, method, properties, body):
+        #         frame = self._convert_bytes_to_image(body)
 
-                self._publish_image_with_metadata(frame, info)
-                print("Published Successfully")
+        #         frame, info = self._tracker_handler(frame)
 
-            self._channel.basic_consume(queue=CONFIG.PRODUCER_QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+        #         cv2.imwrite("FRAME.png", frame)
 
-            print(' [*] Waiting for messages. To exit press CTRL+C')
-            self._channel.start_consuming()
+        #         self._publish_image_with_metadata(frame, info)
+        #         print("Published Successfully")
+
+        #     self._channel.basic_consume(queue=CONFIG.PRODUCER_QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+
+        #     print(' [*] Waiting for messages. To exit press CTRL+C')
+        #     self._channel.start_consuming()

@@ -77,19 +77,11 @@ class Displayer(QWidget):
     def _update_bar_chart(self, canvas, total, part):
         canvas.figure.clf()
         ax = canvas.figure.add_subplot(111)
-
-        # Data to plot
         categories = ['Filled', 'Empty']
         values = [part, total - part]
-        
-        # Create the bar chart
         ax.bar(categories, values, color=['#FF0000', '#00ff00'])
-
-        # Add labels and title
         ax.set_xlabel('Number')
         ax.set_title('Car Cells Status')
-
-        # Optional: Add value labels on bars
         for i, value in enumerate(values):
             ax.text(i, value + 0.01 * total, f'{value}', ha='center')
 

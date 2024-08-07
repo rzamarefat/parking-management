@@ -9,7 +9,7 @@ import random
 import os
 import json
 import torch
-
+import copy
 
 class Tracker(Composition):
     def __init__(self):
@@ -17,6 +17,8 @@ class Tracker(Composition):
         self._color_holder = {}
         self._parse_scene_composition()
         self._visualizer = Visualizer()
+        self._boxes_history = None
+        self._ids_history = None
 
     def _get_filled_cells(self, bounding_boxes):
         device = bounding_boxes.device
@@ -49,6 +51,39 @@ class Tracker(Composition):
         rows = true_indices[:, 0]
 
         return rows
+    
+    def _calculate_speed(self):
+        if self._boxes_history is not None and self._ids_history is not None:
+            ids_diff = [item for item in self._ids_history if item not in self._ids]
+            extra_ids = [item for item in self._ids if item not in self._ids_history]
+
+            # print("++++++++++++++++++++++++++++")
+            # print("ids_diff",ids_diff)
+            # print("extra_ids",extra_ids)
+            
+
+            mask = torch.ones(self._boxes_history.size(0), dtype=torch.bool)
+            mask[ids_diff] = False
+            filtered_boxes_from_history = self._boxes_history[mask]
+            filtered_boxes_from_history = filtered_boxes_from_history.cuda()
+
+            mask = torch.ones(self._boxes.size(0), dtype=torch.bool)
+            mask[extra_ids] = False
+            filtered_boxes_current = self._boxes[mask]
+
+            
+            # print("filtered_boxes_from_history.shape", filtered_boxes_from_history.shape)
+            # print("self._boxes.shape", self._boxes.shape)
+            # print("++++++++++++++++++++++++++++")
+            
+            centers1 = (filtered_boxes_from_history[:, :2] + filtered_boxes_from_history[:, 2:]) / 2.0
+            centers2 = (filtered_boxes_current[:, :2] + filtered_boxes_current[:, 2:]) / 2.0
+            
+            distances = torch.norm(centers1 - centers2, dim=1)
+            print(distances)
+
+            
+
 
     def _track_cars(self, frame):
         results = self._tracker_model.track(frame, persist=True,device=CONFIG.DEVICE,tracker="bytetrack.yaml" ,conf=CONFIG.TRACKER_CONFIDENCE, iou=CONFIG.TRACKER_IOU, verbose=False)
@@ -67,6 +102,12 @@ class Tracker(Composition):
         self._filled_cells_indixes = self._get_filled_cells(self._boxes)
         self._visualizer.draw_cells(frame, self._filled_cells_indixes)
 
+
+        self._calculate_speed()
+
+
+        self._boxes_history = self._boxes.clone()
+        self._ids_history = copy.deepcopy(self._ids)
         
         for box, car_id, conf in zip(self._boxes, self._ids, self._confs):
 
