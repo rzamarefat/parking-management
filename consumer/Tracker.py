@@ -57,16 +57,16 @@ class Tracker:
 
     def _track_cars(self, frame):
         results = self._tracker_model.track(frame, persist=True,device=CONFIG.DEVICE,tracker="bytetrack.yaml" ,conf=CONFIG.TRACKER_CONFIDENCE, iou=CONFIG.TRACKER_IOU, verbose=False)
-        boxes = results[0].boxes.xyxy.to(CONFIG.DEVICE)
-        confs = results[0].boxes.conf.cpu().numpy()
+        self._boxes = results[0].boxes.xyxy.to(CONFIG.DEVICE)
+        self._confs = results[0].boxes.conf.cpu().numpy()
         # classes = results[0].boxes.cls.cpu().numpy().astype(int)
 
         if results[0].boxes.id is None:
-            ids = [None for _ in range(len(boxes))]
+            self._ids = [None for _ in range(len(self._boxes))]
         else:
-            ids = results[0].boxes.id.cpu().numpy().astype(int)
+            self._ids = results[0].boxes.id.cpu().numpy().astype(int)
 
-        for box, car_id, conf in zip(boxes, ids, confs):
+        for box, car_id, conf in zip(self._boxes, self._ids, self._confs):
             if car_id not in self._color_holder.keys():
                 self._color_holder[car_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
@@ -78,7 +78,13 @@ class Tracker:
     def __call__(self, frame):
         frame = self._track_cars(frame)
         info = {
-            "number_of_cars": 200
+            "number_of_cars": len(self._boxes),
+            "number_of_cars_in_zones": {
+                "z1": 20,
+                "z10":  10,
+
+            }
+
         }
         return frame, info
         

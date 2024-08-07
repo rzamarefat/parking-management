@@ -14,7 +14,7 @@ rabbitmq_config = {
 }
 
 class Receiver(QThread):
-    new_frame = pyqtSignal(np.ndarray)
+    new_frame = pyqtSignal(np.ndarray, dict)  # Emit frame and metadata
 
     def run(self):
         credentials = pika.PlainCredentials(rabbitmq_config['username'], rabbitmq_config['password'])
@@ -31,16 +31,16 @@ class Receiver(QThread):
 
         def callback(ch, method, properties, body):
             try:
+                print("Received message:", body[:100], "...")  # Debug print
                 message = msgpack.unpackb(body, raw=False)
                 image_bytes = message['image']
-                metadata = message["metadata"]
-                print(metadata)
+                metadata = message['metadata']  # Extract metadata
                 frame = self.convert_bytes_to_image(image_bytes)
                 
                 # Resize the frame to 1/3 of its original width and height
                 frame_resized = self.resize_frame(frame)
                 
-                self.new_frame.emit(frame_resized)
+                self.new_frame.emit(frame_resized, metadata)  # Emit frame and metadata
             except Exception as e:
                 print(f"Failed to process message: {e}")
 
@@ -59,6 +59,3 @@ class Receiver(QThread):
         new_height = height // 3
         resized_frame = cv2.resize(frame, (new_width, new_height))
         return resized_frame
-
-
-
