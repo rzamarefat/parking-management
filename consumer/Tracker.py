@@ -1,12 +1,8 @@
-from typing import Any
-from sahi import AutoDetectionModel
-from sahi.predict import get_sliced_prediction
 from Configuration import Configuration as CONFIG
-from bytetracker.core import ByteTrack
 import numpy as np
 from ultralytics import YOLO
-from deep_sort import DeepSort
 import cv2
+import random
 
 COLORS_10 =[(144,238,144),(178, 34, 34),(221,160,221),(  0,255,  0),(  0,128,  0),(210,105, 30),(220, 20, 60),
             (192,192,192),(255,228,196),( 50,205, 50),(139,  0,139),(100,149,237),(138, 43,226),(238,130,238),
@@ -69,9 +65,6 @@ class Tracker:
             ids = [None for _ in range(len(boxes))]
         else:
             ids = results[0].boxes.id.cpu().numpy().astype(int)
-
-        import random
-        
 
         for box, car_id, conf in zip(boxes, ids, confs):
             if car_id not in self._color_holder.keys():

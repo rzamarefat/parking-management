@@ -3,11 +3,8 @@ import cv2
 import pika
 import msgpack
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QThread, pyqtSignal
 
-# RabbitMQ configuration
 rabbitmq_config = {
     'host': 'localhost',
     'port': 5672,
@@ -16,7 +13,7 @@ rabbitmq_config = {
     'virtual_host': '/'
 }
 
-class FrameReceiver(QThread):
+class Receiver(QThread):
     new_frame = pyqtSignal(np.ndarray)
 
     def run(self):
@@ -34,9 +31,10 @@ class FrameReceiver(QThread):
 
         def callback(ch, method, properties, body):
             try:
-                print("Received message:", body[:100], "...")  # Debug print
                 message = msgpack.unpackb(body, raw=False)
                 image_bytes = message['image']
+                metadata = message["metadata"]
+                print(metadata)
                 frame = self.convert_bytes_to_image(image_bytes)
                 
                 # Resize the frame to 1/3 of its original width and height
@@ -62,32 +60,5 @@ class FrameReceiver(QThread):
         resized_frame = cv2.resize(frame, (new_width, new_height))
         return resized_frame
 
-class VideoDisplay(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
 
-    def initUI(self):
-        self.setWindowTitle('RabbitMQ Video Stream')
-        self.image_label = QLabel(self)
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(self.image_label)
-        self.setLayout(self.layout)
-        self.frame_receiver = FrameReceiver()
-        self.frame_receiver.new_frame.connect(self.update_image)
-        self.frame_receiver.start()
 
-    def update_image(self, frame):
-        height, width, channel = frame.shape
-        bytes_per_line = 3 * width
-        q_img = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
-        self.image_label.setPixmap(QPixmap.fromImage(q_img))
-
-def main():
-    app = QApplication(sys.argv)
-    display = VideoDisplay()
-    display.show()
-    sys.exit(app.exec_())
-
-if __name__ == '__main__':
-    main()

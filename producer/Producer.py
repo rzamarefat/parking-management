@@ -47,8 +47,11 @@ class Producer:
         
         frame_count = 0
         while True:
-            print(frame_count)
+            
             ret, frame = cap.read()
+
+            if frame is not None:
+                frame = frame[121:,453:,:]
 
             if not ret:
                 break
