@@ -53,34 +53,65 @@ class Tracker(Composition):
 
         return rows
     
+    def _get_filled_cells__for_each_zone(self, bounding_boxes):
+        result = {}
+        for zone_name, zone_polygon in self._zones.items():
+
+            device = bounding_boxes.device
+            rectangles = torch.tensor([zone_polygon], device=device)  # Shape: [num_rectangles, 2, 2]
+
+            
+            rect_top_left = rectangles[:, 0]  # Shape: [num_rectangles, 2]
+            rect_bottom_right = rectangles[:, 1]  # Shape: [num_rectangles, 2]
+            
+            rect_x_min = rect_top_left[:, 0]  # Shape: [num_rectangles]
+            rect_y_min = rect_top_left[:, 1]  # Shape: [num_rectangles]
+            rect_x_max = rect_bottom_right[:, 0]  # Shape: [num_rectangles]
+            rect_y_max = rect_bottom_right[:, 1]  # Shape: [num_rectangles]
+
+            x_min = bounding_boxes[:, 0]  # Shape: [num_bounding_boxes]
+            y_min = bounding_boxes[:, 1]  # Shape: [num_bounding_boxes]
+            x_max = bounding_boxes[:, 2]  # Shape: [num_bounding_boxes]
+            y_max = bounding_boxes[:, 3]  # Shape: [num_bounding_boxes]
+
+            x_center = (x_min + x_max) / 2  # Shape: [num_bounding_boxes]
+            y_center = (y_min + y_max) / 2  # Shape: [num_bounding_boxes]
+
+            center_inside_x = (x_center.unsqueeze(0) >= rect_x_min.unsqueeze(1)) & (x_center.unsqueeze(0) <= rect_x_max.unsqueeze(1))  # Shape: [num_rectangles, num_bounding_boxes]
+            center_inside_y = (y_center.unsqueeze(0) >= rect_y_min.unsqueeze(1)) & (y_center.unsqueeze(0) <= rect_y_max.unsqueeze(1))  # Shape: [num_rectangles, num_bounding_boxes]
+            
+            center_inside = center_inside_x & center_inside_y 
+
+            true_indices = torch.nonzero(center_inside, as_tuple=False)
+            
+            rows = true_indices[:, 0]
+            num_cars_inside_zone = len(rows)
+
+            result[zone_name] = num_cars_inside_zone
+        
+        print(result)
+        return result
+    
     def _calculate_speed(self):
         if self._box_ids_history is not None and self._current_box_ids is not None:
-            print("self._box_ids_history", self._box_ids_history.shape)
-            print("self._current_box_ids", self._current_box_ids.shape)
-
-            # Ensure the tensors are on CUDA
             self._box_ids_history = self._box_ids_history.cuda()
             self._current_box_ids = self._current_box_ids.cuda()
             
-            # Extract IDs and bounding box coordinates
             history_ids = self._box_ids_history[:, 0].long()
             current_ids = self._current_box_ids[:, 0].long()
             
             history_boxes = self._box_ids_history[:, 1:]
             current_boxes = self._current_box_ids[:, 1:]
             
-            # Find mutual IDs using numpy and move back to CUDA
             mutual_ids = torch.tensor(np.intersect1d(history_ids.cpu().numpy(), current_ids.cpu().numpy())).to(self._box_ids_history.device)
             
             if mutual_ids.numel() == 0:
                 print("No mutual IDs found")
                 return torch.tensor([]).cuda()
             
-            # Get indices of mutual IDs in history and current
             history_idx = torch.nonzero(history_ids[:, None] == mutual_ids, as_tuple=False)[:, 0]
             current_idx = torch.nonzero(current_ids[:, None] == mutual_ids, as_tuple=False)[:, 0]
             
-            # Filter the boxes for mutual IDs
             history_mutual_boxes = history_boxes[history_idx]
             current_mutual_boxes = current_boxes[current_idx]
             
@@ -88,21 +119,15 @@ class Tracker(Composition):
                 print("No mutual boxes found after indexing")
                 return torch.tensor([]).cuda()
             
-            # Calculate centers
             history_centers = (history_mutual_boxes[:, :2] + history_mutual_boxes[:, 2:]) / 2.0
             current_centers = (current_mutual_boxes[:, :2] + current_mutual_boxes[:, 2:]) / 2.0
             
-            # Compute distances
             distances = torch.norm(history_centers - current_centers, dim=1)
-            
-            # Combine mutual IDs and distances into the result tensor
             result = torch.stack((mutual_ids.float(), distances), dim=1)
 
             distances = result[:, 1]
-            updated_distances = torch.where(distances > 0.5, distances * 6, 0)
-            
-            # Update the result tensor
-            result[:, 1] = updated_distances
+            updated_velocities = torch.where(distances > 1, (distances * CONFIG.PIX_TO_KM_RATE) / (9.258333333e-6), 0)
+            result[:, 1] = updated_velocities
             result = result.to("cpu").numpy().tolist()
             
             return {int(k[0]):round(k[1], 2) for k in result}
@@ -124,6 +149,7 @@ class Tracker(Composition):
 
         
         self._filled_cells_indixes = self._get_filled_cells(self._boxes)
+        self._filled_cells_stats_for_each_zone = self._get_filled_cells__for_each_zone(self._boxes)
         self._visualizer.draw_cells(frame, self._filled_cells_indixes)
 
 
@@ -139,7 +165,6 @@ class Tracker(Composition):
             
             
             speed = self._speed_stats.get(int(car_id.item()), None)
-            print(self._speed_stats)
             self._visualizer.draw_single_car(frame, box, car_id, self._color_holder, speed)
 
         return frame
@@ -149,12 +174,7 @@ class Tracker(Composition):
         frame = self._track_cars(frame)
         info = {
             "number_of_cars": len(self._boxes),
-            "number_of_cars_in_zones": {
-                "z1": 20,
-                "z10":  10,
-
-            },
-
+            "number_of_cars_in_zones": self._filled_cells_stats_for_each_zone,
             "number_of_filled_cells": len(self._filled_cells_indixes),
             "number_empty_cells": len(self._car_cells) - len(self._filled_cells_indixes),
             "number_of_car_cells": len(self._car_cells)

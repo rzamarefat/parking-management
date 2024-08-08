@@ -39,3 +39,5 @@ class Configuration:
     RABBIT_IP = "127.0.0.1"
     RABBIT_PORT = "5672"
     QUEUE_NAME = "parking-producer"
+
+    PIX_TO_KM_RATE = (0.00509/112)

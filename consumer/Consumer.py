@@ -60,21 +60,21 @@ class Consumer:
         return frame
         
     def __call__(self, frame=None):
-        frame, info = self._tracker_handler(frame)
-        return frame, info
+        # frame, info = self._tracker_handler(frame)
+        # return frame, info
 
-        # while True:
-        #     def callback(ch, method, properties, body):
-        #         frame = self._convert_bytes_to_image(body)
+        while True:
+            def callback(ch, method, properties, body):
+                frame = self._convert_bytes_to_image(body)
 
-        #         frame, info = self._tracker_handler(frame)
+                frame, info = self._tracker_handler(frame)
 
-        #         cv2.imwrite("FRAME.png", frame)
+                cv2.imwrite("FRAME.png", frame)
 
-        #         self._publish_image_with_metadata(frame, info)
-        #         print("Published Successfully")
+                self._publish_image_with_metadata(frame, info)
+                print("Published Successfully")
 
-        #     self._channel.basic_consume(queue=CONFIG.PRODUCER_QUEUE_NAME, on_message_callback=callback, auto_ack=True)
+            self._channel.basic_consume(queue=CONFIG.PRODUCER_QUEUE_NAME, on_message_callback=callback, auto_ack=True)
 
-        #     print(' [*] Waiting for messages. To exit press CTRL+C')
-        #     self._channel.start_consuming()
+            print(' [*] Waiting for messages. To exit press CTRL+C')
+            self._channel.start_consuming()
