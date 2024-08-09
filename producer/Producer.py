@@ -7,35 +7,12 @@ class Producer:
     def __init__(self):
         self._rabbit_publisher = RabbitPublisher(CONFIG.QUEUE_NAME)
         self._rabbit_publisher.start()
-        self._rabbitmq_config = {
-                'host': 'localhost',
-                'port': 5672,
-                'username': 'guest',
-                'password': 'guest',
-                'virtual_host': '/'
-            }
 
     @staticmethod
     def _convert_image_to_bytes(frame):
         ret, buffer = cv2.imencode('.jpg', frame)
         image_bytes = buffer.tobytes()
         return image_bytes
-    
-    
-
-    def publish_image(self, image_bytes):
-        credentials = pika.PlainCredentials(self._rabbitmq_config['username'], self._rabbitmq_config['password'])
-        parameters = pika.ConnectionParameters(
-            host=self._rabbitmq_config['host'],
-            port=self._rabbitmq_config['port'],
-            virtual_host=self._rabbitmq_config['virtual_host'],
-            credentials=credentials
-        )
-        connection = pika.BlockingConnection(parameters)
-        channel = connection.channel()
-        channel.queue_declare(queue='video_frames')
-        channel.basic_publish(exchange='', routing_key='video_frames', body=image_bytes)
-        connection.close()
 
 
     def __call__(self, video_path):
