@@ -69,8 +69,6 @@ class Consumer:
 
                 frame, info = self._tracker_handler(frame)
 
-                cv2.imwrite("FRAME.png", frame)
-
                 self._publish_image_with_metadata(frame, info)
                 print("Published Successfully")
 
