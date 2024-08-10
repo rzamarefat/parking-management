@@ -52,25 +52,20 @@ class Displayer(QWidget):
         self.frame_receiver.start()
 
     def _create_chart(self, total, part):
-        fig, ax = plt.subplots(figsize=(4, 4))  # Set the figure size smaller
+        fig, ax = plt.subplots(figsize=(4, 4))
 
-        # Data for the bar chart
         categories = ['Part', 'Remaining']
         values = [part, total - part]
         
-        # Create the bar chart
         ax.bar(categories, values, color=['#ff9999', '#66b3ff'])
 
-        # Add labels and title
         ax.set_xlabel('Category')
         ax.set_ylabel('Value')
         ax.set_title('Bar Chart of Part and Remaining')
 
-        # Optional: Add value labels on bars
         for i, value in enumerate(values):
             ax.text(i, value + 0.01 * total, f'{value}', ha='center')
 
-        # Create a canvas and return it
         canvas = FigureCanvas(fig)
         return canvas
 
@@ -93,7 +88,7 @@ class Displayer(QWidget):
     @pyqtSlot(np.ndarray, dict)
     def update_image(self, frame, metadata):
         try:
-            print("Updating image and metadata...")  # Debug print
+            print("Updating image and metadata...")
             height, width, channel = frame.shape
             bytes_per_line = 3 * width
             q_img = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
@@ -103,9 +98,17 @@ class Displayer(QWidget):
                 self.metadata_layout.itemAt(i).widget().setParent(None)
 
             for key, value in metadata.items():
-                key_label = QLabel(f"<b>{key}:</b>")
-                value_label = QLabel(str(value))
-                self.metadata_layout.addRow(key_label, value_label)
+                if key == "number_of_cars_in_zones":
+                    for zone_name, actual_value in value.items():
+                        key_label = QLabel(f"<b>{zone_name}:</b>")
+                        value_label = QLabel(str(actual_value))
+                        self.metadata_layout.addRow(key_label, value_label)
+                else:
+                    key = key.replace("_", " ")
+                    key = " ".join([k.upper() for k in key.split(" ")])
+                    key_label = QLabel(f"<b>{key}:</b>")
+                    value_label = QLabel(str(value))
+                    self.metadata_layout.addRow(key_label, value_label)
 
             self._update_bar_chart(self.cell_chart, metadata["number_of_car_cells"], metadata["number_of_filled_cells"])
 

@@ -88,8 +88,7 @@ class Tracker(Composition):
             num_cars_inside_zone = len(rows)
 
             result[zone_name] = num_cars_inside_zone
-        
-        print(result)
+    
         return result
     
     def _calculate_speed(self):
