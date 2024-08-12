@@ -4,24 +4,18 @@ import pika
 import msgpack
 import numpy as np
 from PyQt5.QtCore import QThread, pyqtSignal
+from Configuration import Configuration as CONFIG
 
-rabbitmq_config = {
-    'host': 'localhost',
-    'port': 5672,
-    'username': 'guest',
-    'password': 'guest',
-    'virtual_host': '/'
-}
 
 class Receiver(QThread):
-    new_frame = pyqtSignal(np.ndarray, dict)  # Emit frame and metadata
+    new_frame = pyqtSignal(np.ndarray, dict)
 
     def run(self):
-        credentials = pika.PlainCredentials(rabbitmq_config['username'], rabbitmq_config['password'])
+        credentials = pika.PlainCredentials(CONFIG.RABBIT_USERNAME, CONFIG.RABBIT_PASSWORD)
         parameters = pika.ConnectionParameters(
-            host=rabbitmq_config['host'],
-            port=rabbitmq_config['port'],
-            virtual_host=rabbitmq_config['virtual_host'],
+            host=CONFIG.RABBIT_HOST,
+            port=CONFIG.RABBIT_PORT,
+            virtual_host=CONFIG.RABBIT_VIRTUAL_HOST,
             credentials=credentials
         )
 
@@ -52,7 +46,6 @@ class Receiver(QThread):
         return frame
 
     def resize_frame(self, frame):
-        # Resize frame to 1/3 of its original width and height
         height, width = frame.shape[:2]
         new_width = width // 3
         new_height = height // 3
