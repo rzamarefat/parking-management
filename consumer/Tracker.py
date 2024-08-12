@@ -228,8 +228,6 @@ class Tracker(Composition):
         self._box_ids_history = self._current_box_ids.clone()
         
         for box, car_id, conf in zip(self._boxes, self._ids, self._confs):
-
-            
             if car_id not in self._color_holder.keys():
                 self._color_holder[car_id] = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             
