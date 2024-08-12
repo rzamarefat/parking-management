@@ -49,7 +49,6 @@ class Visualizer(Composition):
         
         return frame
 
-
     def draw_zones(self, frame):
         for k, v in self._zones.items():
             opacity=0.2
@@ -61,13 +60,16 @@ class Visualizer(Composition):
 
         return overlay
     
-    def draw_single_car(self, frame, box, car_id, color_holder, speed):
-        # frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), color_holder[car_id], 2)
+    def draw_single_car(self, frame, box, car_id, color_holder, speed, cars_with_bad_parking_style):
         if speed is None:
             speed_txt = "N"
         else:
             speed_txt = str(speed)
-        frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), (0,0,0), 2)
+
+        if int(car_id.item()) not in cars_with_bad_parking_style:
+            frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), (0,0,0), 2)
+        else:
+            frame = cv2.rectangle(frame, (int(box[0].item()), int(box[1].item())), (int(box[2].item()), int(box[3].item())), (0,0,255), thickness=cv2.FILLED)
 
         if speed != 0.0:
             cv2.putText(frame, speed_txt, (int(box[0].item()), int(box[1].item())), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,0), 2, cv2.LINE_AA)

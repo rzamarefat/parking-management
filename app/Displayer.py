@@ -145,7 +145,7 @@ class Displayer(QWidget):
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.metadata_widget)
-        self.scroll_area.setFixedWidth(1200)  # Adjusted width including scroll area
+        self.scroll_area.setFixedWidth(1075)  # Adjusted width including scroll area
 
         self.image_layout = QVBoxLayout()
         self.image_layout.addWidget(self.image_label)

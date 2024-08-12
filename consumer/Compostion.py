@@ -9,8 +9,6 @@ class Composition:
 
     @staticmethod
     def _get_top_bottom_points(coordinates):
-        print("coordinates")
-        print(coordinates)
         p1, p2 = coordinates
         x1, y1 = p1
         x2, y2 = p2

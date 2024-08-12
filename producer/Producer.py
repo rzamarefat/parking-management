@@ -26,10 +26,7 @@ class Producer:
         while True:
             
             ret, frame = cap.read()
-
-            if frame is not None:
-                frame = frame[121:,453:,:]
-
+                
             if not ret:
                 break
                 
