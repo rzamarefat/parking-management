@@ -63,6 +63,30 @@ class DatabaseHandler:
 
         cursor.close()
         connection.close()
+    
+    def is_there_the_frame(self, index, timestamp):
+        query = f"""SELECT * FROM {CONFIG.DB_TABLE_NAME} 
+                    WHERE index='{index}'
+                    AND timestamp='{timestamp}'
+                    AND is_analyzed=true
+                """
+        connection = psycopg2.connect(**self._db_params)
+        cursor = connection.cursor()
+        query = sql.SQL(query)
+        cursor.execute(query)
+        records = cursor.fetchall()
+        cursor.close()
+        connection.close()
+
+        if len(records) == 1:
+            return True
+        elif len(records) == 0:
+            return False
+        else:
+            raise RuntimeError("WTF!")
+
+        
+        return latest_index
 
 
 
@@ -71,5 +95,8 @@ if __name__ == "__main__":
     db_handler = DatabaseHandler()
     # res = db_handler.get_last_not_analyzed_index("2023-08-08")
     
-    db_handler.update_frame_stats(index='0', timestamp="2023-08-08", stat={"dsadasda": {"aasas": "a"}})
+    # db_handler.update_frame_stats(index='0', timestamp="2023-08-08", stat={"dsadasda": {"aasas": "a"}})
     # db_handler.push_frame_to_db("2", "2023-08-08")
+
+    res = db_handler.is_there_the_frame(index='1', timestamp="2023-08-08")
+    print(res)
