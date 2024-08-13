@@ -11,12 +11,6 @@ class Producer:
         self._rabbit_publisher.start()
 
         self._db_handler = DatabaseHandler()
-
-    @staticmethod
-    def _convert_image_to_bytes(frame):
-        ret, buffer = cv2.imencode('.jpg', frame)
-        image_bytes = buffer.tobytes()
-        return image_bytes
     
     @staticmethod
     def _encode_img_to_base64(frame):
@@ -37,10 +31,6 @@ class Producer:
             timestamp = datetime.today().strftime('%Y-%m-%d')
             last_index = self._db_handler.get_last_not_analyzed_index(timestamp=timestamp)
 
-            # data_to_publish = {
-            #     "img":self._convert_image_to_bytes(frame),
-            #     "metadata": f"{timestamp}__{last_index+1}"
-            # }
             data_to_publish = {
                 "img":self._encode_img_to_base64(frame),
                 "metadata": f"{timestamp}__{last_index+1}"

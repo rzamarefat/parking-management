@@ -7,6 +7,7 @@ import cv2
 import base64
 import json
 import msgpack
+from DatabaseHandler import DatabaseHandler
 
 class Consumer:
     def __init__(self):
@@ -19,6 +20,8 @@ class Consumer:
         self._channel = self._connection.channel()
         self._channel.queue_declare(queue=CONFIG.PRODUCER_QUEUE_NAME)
 
+
+        self._database_handler = DatabaseHandler()
 
     @staticmethod
     def _convert_image_to_bytes(frame):
@@ -71,18 +74,22 @@ class Consumer:
             def callback(ch, method, properties, body):
                 fetched_data = json.loads(body.decode('utf-8'))
                 frame = base64.b64decode(fetched_data['img'])
-                print(frame)
+                
                 frame = np.frombuffer(frame, dtype=np.uint8)
-                print(frame.shape)
+                
                 frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
                 metadata = fetched_data['metadata']
-
-                print(frame.shape)
-                cv2.imwrite("UUUU.png", frame)
-                print(metadata)
-                exit()
+                timestamp = metadata.split("__")[0]
+                index = int(metadata.split("__")[1])
+                
                 frame, info = self._tracker_handler(frame)
+                print(index)
+                res = self._database_handler.is_there_the_frame(index=str(index - 1), timestamp=timestamp)
+                print(res)
+                exit()
+
+
 
                 self._publish_image_with_metadata(frame, info)
                 print("Published Successfully")
