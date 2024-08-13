@@ -37,6 +37,7 @@ class Producer:
             }
             
             self._rabbit_publisher.publish(data_to_publish)
+            print("Published ...")
             if last_index == -1:
                 self._db_handler.push_frame_to_db(index=0, timestamp=timestamp)
             else:

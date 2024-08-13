@@ -37,7 +37,7 @@ class DatabaseHandler:
 
         query = sql.SQL(f"""
             UPDATE {CONFIG.DB_TABLE_NAME}
-            SET stats = %s, is_analyzed=true
+            SET stat = %s, is_analyzed=true
             WHERE index = %s
             AND timestamp = %s;
         """)

@@ -84,14 +84,24 @@ class Consumer:
                 index = int(metadata.split("__")[1])
                 
                 frame, info = self._tracker_handler(frame)
-                print(index)
-                res = self._database_handler.is_there_the_frame(index=str(index - 1), timestamp=timestamp)
-                print(res)
-                exit()
+                if index == 0:
+                    self._publish_image_with_metadata(frame, info)
+                    self._database_handler.update_frame_stats(index=index, timestamp=timestamp, stat=info)
+                    print("Successfull 1")
+                else:
+                    is_prev_frame_analyzed = self._database_handler.is_there_the_frame(index=str(index - 1), timestamp=timestamp)
+                    prev_frame_found = is_prev_frame_analyzed
+                    print(index)
+                    while not(prev_frame_found):
+                        is_prev_frame_analyzed = self._database_handler.is_there_the_frame(index=str(index - 1), timestamp=timestamp)
 
+                        if is_prev_frame_analyzed:
+                            prev_frame_found = True
 
-
-                self._publish_image_with_metadata(frame, info)
+                            self._publish_image_with_metadata(frame, info)
+                            self._database_handler.update_frame_stats(index=index, timestamp=timestamp, stat=info)
+                            print("Successfull 2")
+                
                 print("Published Successfully")
 
             self._channel.basic_consume(queue=CONFIG.PRODUCER_QUEUE_NAME, on_message_callback=callback, auto_ack=True)
