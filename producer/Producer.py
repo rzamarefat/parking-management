@@ -3,6 +3,7 @@ from Configuration import Configuration as CONFIG
 import cv2
 from DatabaseHandler import DatabaseHandler 
 from datetime import datetime
+import base64
 
 class Producer:
     def __init__(self):
@@ -16,7 +17,14 @@ class Producer:
         ret, buffer = cv2.imencode('.jpg', frame)
         image_bytes = buffer.tobytes()
         return image_bytes
+    
+    @staticmethod
+    def _encode_img_to_base64(frame):
+        _, buffer = cv2.imencode('.jpg', frame)
+        image_bytes = buffer.tobytes()
+        base64_encoded = base64.b64encode(image_bytes).decode('utf-8')
 
+        return base64_encoded
 
     def __call__(self, video_path):
         cap = cv2.VideoCapture(video_path)
@@ -28,7 +36,17 @@ class Producer:
                 break
             timestamp = datetime.today().strftime('%Y-%m-%d')
             last_index = self._db_handler.get_last_not_analyzed_index(timestamp=timestamp)
-            self._rabbit_publisher.publish(self._convert_image_to_bytes(frame))
+
+            # data_to_publish = {
+            #     "img":self._convert_image_to_bytes(frame),
+            #     "metadata": f"{timestamp}__{last_index+1}"
+            # }
+            data_to_publish = {
+                "img":self._encode_img_to_base64(frame),
+                "metadata": f"{timestamp}__{last_index+1}"
+            }
+            
+            self._rabbit_publisher.publish(data_to_publish)
             if last_index == -1:
                 self._db_handler.push_frame_to_db(index=0, timestamp=timestamp)
             else:

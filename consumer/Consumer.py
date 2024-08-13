@@ -58,6 +58,10 @@ class Consumer:
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         return frame
+    
+    @staticmethod
+    def _convert_base64_to_img(base64_img):
+        return base64.b64decode(base64_img)
         
     def __call__(self, frame=None):
         # frame, info = self._tracker_handler(frame)
@@ -65,8 +69,19 @@ class Consumer:
 
         while True:
             def callback(ch, method, properties, body):
-                frame = self._convert_bytes_to_image(body)
+                fetched_data = json.loads(body.decode('utf-8'))
+                frame = base64.b64decode(fetched_data['img'])
+                print(frame)
+                frame = np.frombuffer(frame, dtype=np.uint8)
+                print(frame.shape)
+                frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
+                metadata = fetched_data['metadata']
+
+                print(frame.shape)
+                cv2.imwrite("UUUU.png", frame)
+                print(metadata)
+                exit()
                 frame, info = self._tracker_handler(frame)
 
                 self._publish_image_with_metadata(frame, info)

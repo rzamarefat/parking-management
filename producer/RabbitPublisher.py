@@ -2,6 +2,7 @@ import threading
 from time import sleep
 from pika import ConnectionParameters, BlockingConnection, PlainCredentials
 from Configuration import Configuration as CONFIG
+import json
 
 class RabbitPublisher(threading.Thread):
     def __init__(self, queue, *args, **kwargs):
@@ -26,6 +27,7 @@ class RabbitPublisher(threading.Thread):
         self.channel.basic_publish("", self.queue, body=message)
 
     def publish(self, message):
+        message = json.dumps(message).encode('utf-8')
         self.connection.add_callback_threadsafe(lambda: self._publish(message))
 
     def stop(self):
