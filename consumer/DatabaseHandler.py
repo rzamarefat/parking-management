@@ -1,5 +1,5 @@
 import psycopg2
-from psycopg2 import sql, Error
+from psycopg2 import sql
 from Configuration import Configuration as CONFIG
 from psycopg2.extras import Json
 
@@ -26,10 +26,10 @@ class DatabaseHandler:
         records = cursor.fetchall()
         cursor.close()
         connection.close()
-        if len(records) == 0:
-            return -1
-        else:
-            return sorted([int(r[0]) for r in records], reverse=True)[0]
+
+        latest_index = [r[0] for r in records][0]
+        
+        return latest_index
 
     def update_frame_stats(self, index, timestamp, stat):
         connection = psycopg2.connect(**self._db_params)
@@ -84,19 +84,3 @@ class DatabaseHandler:
             return False
         else:
             raise RuntimeError("WTF!")
-
-        
-        return latest_index
-
-
-
-
-if __name__ == "__main__":
-    db_handler = DatabaseHandler()
-    # res = db_handler.get_last_not_analyzed_index("2023-08-08")
-    
-    # db_handler.update_frame_stats(index='0', timestamp="2023-08-08", stat={"dsadasda": {"aasas": "a"}})
-    # db_handler.push_frame_to_db("2", "2023-08-08")
-
-    res = db_handler.is_there_the_frame(index='1', timestamp="2023-08-08")
-    print(res)

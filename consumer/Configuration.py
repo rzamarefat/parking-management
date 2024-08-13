@@ -41,3 +41,11 @@ class Configuration:
     QUEUE_NAME = "parking-producer"
 
     PIX_TO_KM_RATE = (0.00509/112)
+
+
+    DB_NAME = "Parking" 
+    DB_USER = "postgres"
+    DB_PASSWORD = "postgres"
+    DB_HOST = "localhost"
+    DB_PORT = "5432"
+    DB_TABLE_NAME = "public.parking"
